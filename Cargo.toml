@@ -1,0 +1,18 @@
+[package]
+name = "fixedstep"
+version = "0.1.0"
+authors = ["HeroesGrave"]
+description = "Simple macro to create a fixed timestep loop for a game"
+repository = "https://github.com/HeroesGrave/fixedstep-rs"
+homepage = "https://github.com/HeroesGrave/fixedstep-rs"
+license = "MIT"
+readme = "README.md"
+keywords = [
+    "game",
+    "loop",
+    "fixed",
+    "timestep",
+]
+
+[dependencies]
+clock_ticks = "*"
