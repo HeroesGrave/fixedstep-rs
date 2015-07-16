@@ -41,7 +41,7 @@ macro_rules! fixedstep_loop {
                 // Do not use for simulations
                 if $skip && accumulator > update_interval
                 {
-                    accumulator -= 1.0;
+                    accumulator = 0.0;
                 }
 
                 let $delta = (($crate::nano_time() as f64 - last) / update_interval).min(1.0);
@@ -55,7 +55,7 @@ macro_rules! fixedstep_loop {
         Render($delta:pat) => $Render:block,
     } => {
         fixedstep_loop!(
-            Step($ticks),
+            Step($ticks, true),
             Update => $Update,
             Render($delta) => $Render,
         )
