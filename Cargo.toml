@@ -5,7 +5,7 @@ authors = ["HeroesGrave"]
 description = "Simple macro to create a fixed timestep loop for a game"
 repository = "https://github.com/HeroesGrave/fixedstep-rs"
 homepage = "https://github.com/HeroesGrave/fixedstep-rs"
-license = "MIT"
+license = "MIT OR Apache-2.0"
 readme = "README.md"
 keywords = [
     "game",
