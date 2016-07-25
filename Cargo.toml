@@ -15,4 +15,3 @@ keywords = [
 ]
 
 [dependencies]
-clock_ticks = "*"

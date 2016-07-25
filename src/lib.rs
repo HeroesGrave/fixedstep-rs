@@ -1,11 +1,3 @@
-
-extern crate clock_ticks;
-
-pub fn nano_time() -> u64
-{
-    clock_ticks::precise_time_ns()
-}
-
 #[macro_export]
 macro_rules! fixedstep_loop {
     {
@@ -14,18 +6,21 @@ macro_rules! fixedstep_loop {
         Render($delta:pat) => $Render:block,
     } => {
         {
-            let nanos: f64 = 1_000_000_000f64;
-            let update_interval: f64 = nanos / ($ticks as f64);
+            use std::time::{Duration, Instant};
+            let ticks = 1.0 / $ticks as f64;
+            let ticks_s = ticks as u64;
+            let ticks_ns = (ticks.fract() * 1000_000_000.0) as u32;
+            let update_interval = Duration::new(ticks_s, ticks_ns);
             let skip_threshold: i32 = 3;
 
-            let mut last = $crate::nano_time() as f64;
-            let mut accumulator = 0.0f64;
+            let mut last = Instant::now();
+            let mut accumulator = Duration::new(0, 0);
 
             let mut should_close = false;
 
             while !should_close
             {
-                let now = $crate::nano_time() as f64;
+                let now = Instant::now();
                 accumulator += now - last;
                 last = now;
 
@@ -41,10 +36,11 @@ macro_rules! fixedstep_loop {
                 // Do not use for simulations
                 if $skip && accumulator > update_interval
                 {
-                    accumulator = 0.0;
+                    accumulator = Duration::new(0, 0);
                 }
 
-                let $delta = (($crate::nano_time() as f64 - last) / update_interval).min(1.0);
+                let elapsed = last.elapsed();
+                let $delta = ((elapsed.as_secs() as f64 + elapsed.subsec_nanos() as f64 / 1000_000_000.0) / ticks).min(1.0);
                 $Render
             }
         }
