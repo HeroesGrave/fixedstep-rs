@@ -1,6 +1,6 @@
 [package]
 name = "fixedstep"
-version = "0.1.1"
+version = "0.2.0"
 authors = ["HeroesGrave"]
 description = "Simple macro to create a fixed timestep loop for a game"
 repository = "https://github.com/HeroesGrave/fixedstep-rs"
