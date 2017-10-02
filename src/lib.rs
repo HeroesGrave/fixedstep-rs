@@ -1,3 +1,93 @@
+
+use std::time::{Duration, Instant};
+
+const NANOS_PER_SECOND: f64 = 1_000_000_000.0;
+
+pub struct FixedStep {
+    last_time: Instant,
+    update_interval: Duration,
+    accumulator: Duration,
+    update_counter: u32,
+    update_limit: u32,
+}
+
+impl FixedStep {
+    /// Create and start a new fixedstep timer with the given frequency in Hz
+    pub fn start(hz: f64) -> Self {
+        let seconds = 1.0 / hz;
+        let full_seconds = seconds as u64;
+        let remaining_nanos = (seconds.fract() * NANOS_PER_SECOND) as u32;
+        FixedStep {
+            update_interval: Duration::new(full_seconds, remaining_nanos),
+            last_time: Instant::now(),
+            accumulator: Duration::new(0, 0),
+            update_counter: 0,
+            update_limit: 3,
+        }
+    }
+
+    /// Set the limit for how many updates can be performed between rendering.
+    /// ie: the maximum number of times update() will return true between calls to render_delta
+    ///
+    /// Use this if rendering on time is more important than keeping the simulation on time
+    /// (which is usually the case for video games).
+    pub fn limit(mut self, limit: u32) -> Self {
+        self.update_limit = limit;
+        self
+    }
+
+    /// Remove the update limit
+    pub fn unlimit(mut self) -> Self {
+        self.update_limit = ::std::u32::MAX;
+        self
+    }
+
+    /// Restarts the timer at the current time and clears any waiting updates.
+    pub fn reset(&mut self) {
+        self.last_time = Instant::now();
+        self.update_counter = 0;
+        self.accumulator = Duration::new(0, 0);
+    }
+
+    /// Returns true if enough time has elapsed to perform another update.
+    pub fn update(&mut self) -> bool {
+        let now = Instant::now();
+        self.accumulator += now - self.last_time;
+        self.last_time = now;
+        if self.accumulator >= self.update_interval {
+            // Time for another update
+            self.update_counter += 1;
+            if self.update_counter > self.update_limit {
+                // If too many updates have occured since the last render,
+                // skip any waiting updates and return false
+                self.accumulator = Duration::new(0, 0);
+                self.update_counter = 0;
+                false
+            } else {
+                self.accumulator -= self.update_interval;
+                true
+            }
+        } else {
+            // Not ready for another update yet
+            false
+        }
+    }
+
+    /// Return the amount of time (relative to the update period) since the last update tick.
+    ///
+    /// Also refreshes the update counter (see the `limit` method)
+    pub fn render_delta(&mut self) -> f64 {
+        self.update_counter = 0;
+        duration_to_float(self.accumulator) / duration_to_float(self.update_interval)
+    }
+}
+
+fn duration_to_float(dur: Duration) -> f64 {
+    (dur.as_secs() as f64 + dur.subsec_nanos() as f64 / NANOS_PER_SECOND)
+}
+
+// Legacy macro
+#[deprecated]
 #[macro_export]
 macro_rules! fixedstep_loop {
     {

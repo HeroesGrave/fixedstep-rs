@@ -1,46 +1,60 @@
 fixedstep-rs
 ============
-A simple macro to create a fixed timestep loop in your game (or whatever).
+A simple library to create a fixed timestep loop in your game (or whatever).
 
 ## Usage
 
-### Simplest:
+A basic loop running at 60Hz:
 ```rust
-fn main() {
-    // initialise everything
-
-    fixedstep_loop! {
-        Update => {
-            // update stuff
-            should_terminate() // Return a boolean telling the loop whether to terminate or not.
-        },
-        Render(delta) => { /* render stuff */ }, // Or Render(_) if you don't need the delta
+fn main()
+{
+    let mut fixedstep = fixedstep::FixedStep::start(60.0); // 60.0Hz
+    while isRunning() {
+        while fixedstep.update() {
+            // Do updating things
+        }
+        let _delta = fixedstep.render_delta();
+        // Do rendering things
     }
-
-    // cleanup everything
-}
-```
-
-### Specify update frequency [Hz]
-```rust
-fixedstep_loop! {
-    Step(60), // 60 is default
-    Update => { /* ... */ },
-    Render(delta) => { /* ... */ },
 }
 ```
 The rate of updates is 'fixed' using the update frequency specified.
-The framerate cap has to be controlled in the render block (eg: use VSync).
+Be sure to note that the outer loop above runs as fast as possible, which means the rendering framerate is uncapped.
+You are responsible for implementing the behaviour to cap the framerate (for example: using VSync). Or you could choose not to.
 
-### Disable frame skipping
+### Frame skipping
+
+By default, `update()` will only return true up to 3 times between calls to `render_delta()`. If you want to disable this, you can use the `unlimit()` method:
 ```rust
-fixedstep_loop! {
-    Step(60, false),
-    Update => { /* ... */ },
-    Render(delta) => { /* ... */ },
+let mut fixedstep = fixedstep::FixedStep::start(60.0).unlimit();
+```
+However, this is not recommended. If your update functionality takes longer than the update interval, you may get stuck in a loop and be unable to render (of course, if this occurs it means the machine running the program is unable to run at the requested update rate in the first place. In practice, skipping frames prevents small lag spikes from causing multiple frames of lag as the program tries to catch up).
+
+If you want to change the update limit (for example, if you're updating at a higher frequency than you intend on rendering at), you can call the `limit()` method:
+```rust
+let mut fixedstep = fixedstep::FixedStep::start(60.0).limit(5);
+```
+
+Note that the following two lines are equivalent (because the limit defaults to 3):
+```rust
+let mut fixedstep = fixedstep::FixedStep::start(60.0);
+let mut fixedstep = fixedstep::FixedStep::start(60.0).limit(3);
+```
+
+### Resetting the loop
+
+Sometimes you may find that you need to create the FixedStep object some time before you begin using it. Time is recorded from the creation of the object, so if you wait 5 seconds before starting the loop, the first update loop will try and run for 5 seconds' worth of updates. To prevent this, you can reset the loop just before you begin using it:
+
+```rust
+let mut fixedstep = fixedstep::FixedStep::start(60.0);
+// Initialise some other stuff, possibly taking a long time.
+// ...
+fixedstep.reset();
+while isRunning() {
+    // ...
 }
 ```
-You should only do this if you're running a simulation. With frame-skipping disabled, the framerate may die trying to catch up after a temporary performance hit.
+In practice you should never need to do this (because you can move the initialisation right before the loop starts), but if there's some niche case that needs it, the functionality is there.
 
 ## License
 
